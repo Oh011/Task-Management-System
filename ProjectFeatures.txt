@@ -1,0 +1,778 @@
+﻿
+
+Authentication & Authorization (JWT based, maybe OAuth later)
+
+User Management (register/login, update profile, reset password)
+
+Task CRUD (create, read, update, delete tasks)
+
+Task Assignment (assign tasks to users)
+
+Task Status Tracking (To Do, In Progress, Done, Blocked, etc.)
+
+Due Dates & Reminders (optional notifications)
+
+Priority System (Low, Medium, High, Critical)
+
+Project Support (group tasks into projects)
+
+Comments on Tasks (like chat/messages)
+
+
+Dashboard (simple statistics: completed tasks, overdue tasks, etc.)
+
+
+
+👤 Roles and Their Actions
+
+Role	Actions
+Admin	Manage users (add, remove, edit), view all tasks, manage all projects
+Manager	Create projects, assign tasks to users, monitor progress
+User	Manage own tasks (CRUD), update status, comment on tasks
+
+
+🔥 Extra ideas if you want to make it even cooler
+Email notifications (when a task is assigned or overdue)
+
+File attachments (upload files to tasks)
+
+
+🧠 1. What a User can do:
+Add (Create) their own tasks.
+Update their tasks (for example: change the status to "Done" or edit description).
+Delete their own tasks.
+View their tasks.
+
+✅ Simple rule:
+Users can only manage tasks they created or that were assigned to them.
+
+🧠 2. What happens with Projects:
+Any user can create a new project.
+When a user creates a project, they become the Project Owner (maybe save OwnerUserId).
+The Project Owner can:
+Add other users into their project (invite them).
+Assign tasks to users who are inside that project.
+Other users who are part of the project can:
+View tasks.
+Work on assigned tasks.
+Maybe comment on tasks.
+
+✅ Simple rule:
+Only the Project Owner (or Manager role if you want) can manage project team members and task assignments.
+
+
+📝 1. Personal Task
+Belongs only to the user (private task).
+No project attached.
+Example:
+
+"Buy groceries"
+"Prepare for a meeting"
+
+👉 In the database:
+ProjectId = null
+AssignedUserId = Your own user id
+
+🛠️ 2. Project Task
+Belongs to a Project.
+Assigned to you or someone else in the project team.
+
+Example:
+"Design project logo" (assigned to designer)
+"Set up database" (assigned to backend developer)
+
+👉 In the database:
+ProjectId = project id
+AssignedUserId = assigned user's id
+
+
+=======================================================================================
+
+✅ Authentication Features (Who are you?) :
+
+1.User Registration:
+Register with email and password
+Assign default role: User
+
+2.Email Confirmation
+Send confirmation email after registration
+Block login until confirmed (options.SignIn.RequireConfirmedEmail = true)
+
+3.Login
+Email + password
+Show errors for invalid credentials, not confirmed, etc.
+
+4. Logout
+Invalidate session/token
+
+5. Password Reset
+Forgot password → send email with token
+Reset password using token
+
+
+6. External Logins (Optional)
+Google, Facebook, etc.
+
+7. JWT Authentication
+Issue JWT token after login
+Add access token in headers for secure API requests
+
+✳️ Summary: What You Need to Build:
+
+| Feature                     | Required | Notes                      |
+| --------------------------- | -------- | -------------------------- |
+| Register/login/logout       | ✅        | Done via Identity          |
+| Confirm email               | ✅        | Via Identity               |
+| JWT tokens                  | ✅        | Use for API                |
+| Reset/change password       | ✅        | Built-in                   |
+| Roles (User, Admin)         | ✅        | Role-based access          |
+| Project-based authorization | ✅        | Custom logic per project   |
+| Admin panel (optional)      | ⚠️       | Only if needed             |
+| External logins (optional)  | ⚠️       | If you want social login   |
+| Token refresh               | ⚠️       | If token lifespan is short |
+
+
+===============================================================================================
+
+Fluent Validation is a popular library in .NET used for building rules-based validation in a fluent, 
+expressive, and strongly-typed manner. It allows you to define validation rules for your models in a clean, 
+readable, and easily configurable way, separate from your model classes, making the code more maintainable.
+
+Key Features of Fluent Validation:
+Fluent API: You define validation rules using a fluent interface, making it easy to chain multiple validation 
+rules.
+Custom Rules: You can write custom validation logic without cluttering your model.
+Separation of Concerns: Validation logic is separated from your models, which helps to keep them clean.
+Error Handling: FluentValidation integrates with ASP.NET Core's model binding and validation system.
+
+
+🔧 How to Use Fluent Validation
+1.Install FluentValidation:
+
+-->Install FluentValidation in the Services project:
+
+You need to install the FluentValidation NuGet package:
+dotnet add package FluentValidation.AspNetCore
+
+
+
+2.Create a Validator Class:
+
+You define a validator class for each model that needs validation. A validator class inherits from 
+AbstractValidator<T>, where T is the type of your model.
+
+Example with a RegisterUserDto class:
+
+public class RegisterUserDtoValidator : AbstractValidator<RegisterUserDto>
+{
+    public RegisterUserDtoValidator()
+    {
+        RuleFor(x => x.Email)
+            .NotEmpty().WithMessage("Email is required")
+            .EmailAddress().WithMessage("Invalid email format");
+
+        RuleFor(x => x.Password)
+            .NotEmpty().WithMessage("Password is required")
+            .MinimumLength(8).WithMessage("Password must be at least 8 characters long");
+
+        RuleFor(x => x.ConfirmPassword)
+            .Equal(x => x.Password).WithMessage("Passwords must match");
+    }
+}
+In the above example:
+
+RuleFor(x => x.Email) defines validation rules for the Email field.
+NotEmpty(), EmailAddress(), and MinimumLength() are built-in validation methods.
+WithMessage() allows you to specify the error message for each rule.
+
+3. Register the Validator:
+In your Startup.cs or Program.cs, you need to add FluentValidation to the service collection:
+
+
+public void ConfigureServices(IServiceCollection services)
+{
+    services.AddControllers()
+        .AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<RegisterUserDtoValidator>());
+}
+This will automatically discover and use the validators you've defined.
+
+
+
+4. Using FluentValidation in Controller:
+
+You can now use FluentValidation to validate your models. When a request is sent to a controller action,
+FluentValidation will automatically validate the model before it reaches your action method.
+
+[HttpPost("register")]
+public async Task<IActionResult> Register(RegisterUserDto model)
+{
+    if (!ModelState.IsValid)
+    {
+        return BadRequest(ModelState);
+    }
+
+    // Your registration logic here
+    return Ok();
+}
+
+=-=-------------------------------------------------------
+Notes:
+
+--> About
+
+-------------------------------------------------------------------------
+
+Summary of Best Practices for RESTful API Naming:
+
+
+Use nouns for resources (plural).
+Use HTTP methods (GET, POST, PUT, PATCH, DELETE) to represent actions.
+Avoid verbs in resource names.
+Use hyphens for readability.
+Name endpoints to reflect resource relationships.
+Use query parameters for filtering, sorting, and pagination.
+Ensure consistency across endpoint names.
+Choose appropriate HTTP status codes.
+Structure authentication/authorization routes separately.
+
+================================================
+
+
+🔒 What Is a Refresh Token?
+
+A refresh token is a long-lived credential that:
+Is issued along with a short-lived access token (JWT).
+Allows the client to obtain a new access token without forcing the user to re-authenticate.
+Is stored securely (e.g., in HttpOnly cookies or secure local storage).
+Helps maintain a good user experience and security.
+
+=====
+
+✅ Why Allow Multiple Refresh Tokens per User?
+Users often log in from multiple devices or browsers:
+
+Laptop (Chrome)
+Mobile phone (Safari/Chrome)
+Work PC (Edge)
+
+--> Each device/session should have its own refresh token, so:
+They can stay logged in independently.
+Revoking one (e.g., phone lost) doesn’t log the user out everywhere.
+
+
+========================================================================
+
+
+| Feature                              | Behavior                                                                                   |
+| ------------------------------------ | ------------------------------------------------------------------------------------------ |
+| **Project Visibility**               | User sees **only projects they are part of**. No need to show unrelated projects.          |
+| **Role-Based Access Control (RBAC)** | User's actions depend on their role in the project: `Admin`, `Member`, `Viewer`, etc.      |
+| **Invitation System**                | Project admins can invite users. Invitations have **expiry dates**.                        |
+| **Notification System**              | Users get notified when invited, with possible reminders.                                  |
+| **Audit Logs**                       | All invitation activities are logged for traceability.                                     |
+| **Projects UI**                      | Projects are shown in a **table or card view** → clickable → access tasks, dashboard, etc. |
+
+
+=================================================================================
+
+
+Test Data :
+
+user 1:
+
+Log In : 
+{
+  "email": "hamdy43@gmail.com",
+  "password": "Hm#12345",
+   "deviceId": "H1",
+  "deviceInfo": "string"
+}
+
+Register:
+
+{
+  "email": "hamdy43@gmail.com",
+  "password": "Hm#12345",
+  "confirmPassword": "Hm#12345",
+  "userName": "Hamdy011",
+  "fullName": "Hamdy"
+
+
+}
+
+
+user 2:
+
+Log In :
+
+{
+
+  "email": "ohisham011@gmail.com",
+  "password": "Om#12345",
+   "deviceId": "O1",
+  "deviceInfo": "string"
+}
+
+Register :
+
+{
+  "email": "ohisham011@gmail.com",
+  "password": "Om#12345",
+  "confirmPassword": "Om#12345",
+  "userName": "omar011",
+  "fullName": "omar"
+}
+
+Token :
+
+===================================================================================
+
+
+Project structre:
+
+LoadStatusTransitions in **Domain/Common**:
+
+Why it fits in Domain/Common:
+
+| Aspect                             | Explanation                                                                                                                    |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **Pure Domain Knowledge**          | This class only holds and exposes static, hardcoded business rules — status transitions — which are part of your domain logic. |
+| **No Infrastructure Dependencies** | It doesn't depend on services, caching, databases, HTTP context, or any external input.                                        |
+| **Stateless and Pure**             | It's static and read-only — which makes it a great candidate for domain-level constants or rules.                              |
+| **Used by Services**               | Domain logic is often used *by* services — and `StatusTransitionService` appropriately delegates to this domain class.         |
+
+
+
+why LinkBuilder in the Infrastructure/Utilities folder is correct and clean ✅.?
+
+LinkBuilder is not a domain/business rule, it’s a technical helper that:
+
+Uses HttpContextAccessor (infrastructure dependency),
+Builds links for use in other layers (e.g., email, frontend).
+It does not contain core logic like registering users, validating tokens, or updating data — 
+it’s a pure utility.
+
+It’s focused on building URLs, which is similar to the role of helpers or utility functions in 
+most layered architectures.
+
+
+======================================================================================================
+
+background services are long-running tasks or processes that run in the background, 
+independently of user requests. They are used for operations that don’t need to return an immediate 
+response to the client, such as:
+
+🔧 Common Use Cases for Background Services
+Sending emails or notifications
+Processing queues (e.g., RabbitMQ, Azure Queue, Redis Queue)
+Scheduled jobs (e.g., clean up logs, database maintenance)
+Consuming external APIs periodically
+Periodic health checks or metrics collection
+
+
+Why Use Background Services?
+
+1.Decoupling Long Running Tasks
+Long tasks don’t block the user HTTP request thread. If you send an email synchronously in a 
+controller, the user waits until the email is sent. Instead, you can push the job to a background service.
+
+2. Reliability & Scalability
+Background services are designed to run independently and reliably even if no requests come in. 
+They allow better resource management.
+
+3. Separation of Concerns
+Keeps your web API controllers light and focused on HTTP request handling, pushing heavy or
+periodic jobs to background workers.
+
+
+==================================================================================
+two main ways to run background tasks in ASP.NET Core:
+
+🔹 1. Using Hangfire (External Library)
+Best for tracked, scheduled, and retryable background jobs.
+
+✅ Features:
+
+Schedule jobs (RecurringJob.AddOrUpdate)
+Enqueue one-off jobs (BackgroundJob.Enqueue)
+Automatic retries and failure tracking
+Dashboard UI at /hangfire
+
+🧠 Example: Deleting revoked tokens every 5 mins
+
+RecurringJob.AddOrUpdate<IYourCleanupService>(
+    jobId: "CleanRevokedTokens",
+    methodCall: service => service.CleanupAsync(),
+    cronExpression: "*/5 * * * *"); // Every 5 mins
+
+
+🔹 2. Using BackgroundService (Built-in)
+Best for simple recurring tasks without external dependencies.
+
+✅ Features:
+
+Built-in and lightweight
+Good for interval-based cleanup
+Runs continuously with the app
+🧠 Example: Same token cleanup logic:
+
+
+
+
+
+========================================================================================
+
+
+ASP.NET Core provides built-in support for background services through the IHostedService interface.
+
+
+🔧 What is BackgroundService?
+BackgroundService is part of .NET's Microsoft.Extensions.Hosting namespace. It's an abstract base
+class you can inherit from to implement long-running background tasks within the same process as your 
+ASP.NET Core app.
+
+It runs outside the HTTP request pipeline, and is especially useful for:
+
+Scheduled cleanup tasks
+Queue processing
+Message consuming
+Periodic polling
+
+
+
+✅ How it Works (Lifecycle)
+1. App Startup
+When the app starts, the host creates and starts the IHostedService (which BackgroundService implements).
+
+2. ExecuteAsync() Runs in Background
+Once started, the ExecuteAsync(CancellationToken) method runs in the background (on a thread pool thread) 
+and keeps running until:
+
+The application is shutting down, or
+An unhandled exception occurs
+
+3. Graceful Shutdown
+When the app is stopping (Ctrl+C, SIGTERM, etc.), the cancellation token passed to ExecuteAsync is 
+triggered — giving you a chance to clean up before stopping.
+
+💡 Key Classes and Interfaces
+
+
+| Component                  | Purpose                                                           |
+| -------------------------- | ----------------------------------------------------------------- |
+| `IHostedService`           | Basic interface for background services                           |
+| `BackgroundService`        | Abstract class you derive from to implement a long-running task   |
+| `IHostApplicationLifetime` | Lets you hook into app lifecycle (start, stop)                    |
+| `IServiceScopeFactory`     | Create scoped services inside background service (like DbContext) |
+
+
+
+
+What is IHostedService?
+It’s an interface defining two lifecycle methods:
+
+StartAsync(CancellationToken cancellationToken)
+StopAsync(CancellationToken cancellationToken)
+
+When ASP.NET Core application starts, it calls all registered IHostedService.StartAsync(). 
+When the app shuts down, it calls StopAsync().
+
+The BackgroundService Abstract Class:
+ASP.NET Core provides an abstract class called BackgroundService that simplifies writing hosted services. 
+It already implements IHostedService and manages the lifecycle and cancellation token.
+
+You only need to override the method:
+protected abstract Task ExecuteAsync(CancellationToken stoppingToken);
+
+The framework calls ExecuteAsync once on start, and you implement the looping or task logic there.
+
+How to Implement a Background Service:
+
+public class TimedHostedService : BackgroundService
+{
+    private readonly ILogger<TimedHostedService> _logger;
+
+    public TimedHostedService(ILogger<TimedHostedService> logger)
+    {
+        _logger = logger;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        _logger.LogInformation("Timed Background Service is starting.");
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("Timed Background Service is doing background work at: {time}", DateTimeOffset.Now);
+
+            // Simulate background work
+            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+        }
+
+        _logger.LogInformation("Timed Background Service is stopping.");
+    }
+}
+
+2. Register the background service in Program.cs or Startup.cs:
+
+
+builder.Services.AddHostedService<TimedHostedService>();
+Run your ASP.NET Core app. The service starts automatically with the app.
+
+What Happens Under the Hood?
+
+1. Hosting environment: ASP.NET Core internally manages all registered hosted services via IHost.
+
+2.When the host starts, it calls StartAsync on all hosted services, triggering your ExecuteAsync.
+
+3. CancellationToken passed to ExecuteAsync signals when the app is shutting down.
+
+4. BackgroundServices run in their own managed thread/task, isolated from the HTTP request threads.
+
+5. On shutdown, the host signals cancellation, waits for your service’s StopAsync to finish cleanly.
+
+Important Design Details & Best Practices
+
+Graceful shutdown: Always respect the CancellationToken in your ExecuteAsync to stop tasks gracefully.
+
+Avoid blocking calls: Use async methods (await Task.Delay, async I/O, etc.) to keep scalability.
+
+Idempotency: Background work should be safe to retry or resume in case of unexpected shutdown.
+
+Exception handling: Unhandled exceptions in background services cause the host to crash.
+Handle exceptions properly inside the loop.
+
+Scope and Dependency Injection:
+By default, BackgroundService runs as a singleton. If you need scoped services (e.g., DbContext), 
+use IServiceScopeFactory to create a scope inside ExecuteAsync.
+
+Example:
+
+
+protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+{
+    while (!stoppingToken.IsCancellationRequested)
+    {
+        using (var scope = _serviceScopeFactory.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<MyDbContext>();
+            // Use dbContext for work
+        }
+        await Task.Delay(10000, stoppingToken);
+    }
+}
+
+-----------------------------------------------------------------
+HangFire:
+
+What is Hangfire?
+Hangfire is a .NET library that lets you run background jobs (tasks outside of the normal 
+HTTP request/response cycle) in your applications. It manages, queues, and executes these jobs 
+reliably, even if your app restarts.
+
+How Hangfire Works (High Level):
+Job Creation:
+You define background jobs by calling Hangfire API methods, e.g., Enqueue(), Schedule(), 
+or RecurringJob.AddOrUpdate(). These describe the method to run and its parameters.
+
+Job Storage:
+Hangfire stores all job info (job details, states, retries, etc.) in a persistent storage like 
+SQL Server, Redis, or others. This ensures jobs aren’t lost if the app restarts or crashes.
+
+Job Server:
+The Hangfire Server is a background process inside your app (or standalone) that continuously
+polls the storage for jobs to execute, picks them up, and runs them.
+
+Job Execution:
+When a job is executed, Hangfire deserializes the method call info and invokes the method you defined.
+
+Dashboard:
+Hangfire provides a nice web UI dashboard to monitor jobs: running, succeeded, failed, retries, queues, etc.
+
+
+Key Concepts and Classes
+1. BackgroundJobClient / IBackgroundJobClient
+Responsible for enqueuing jobs (fire-and-forget, delayed, continuations).
+
+Example: backgroundJobClient.Enqueue(() => SomeMethod())
+
+2. RecurringJob
+Manages recurring jobs that run on a schedule (cron-like).
+Methods: AddOrUpdate(), RemoveIfExists().
+
+3. BackgroundJobServer
+The worker that polls storage and executes jobs.
+You start it with services.AddHangfireServer() in ASP.NET Core DI.
+
+4. JobStorage
+Abstracts the persistent storage of jobs, states, etc.
+Hangfire supports SQL Server, Redis, MongoDB, etc.
+Example: .UseSqlServerStorage(connectionString)
+
+5. Job
+Represents the serialized job (method call and args) stored in the database.
+
+6. State
+Every job has a state: Enqueued, Processing, Succeeded, Failed, Deleted, Scheduled, etc.
+State transitions help Hangfire manage job lifecycle.
+
+7. Monitoring API
+Internally, Hangfire has an API to query jobs and their states for dashboard and management.
+
+8. Dashboard
+Web-based UI you can add to your app (usually at /hangfire route) to visualize jobs, their history,
+retries, errors.
+
+Example Flow of a Job
+You enqueue a job:
+
+backgroundJobClient.Enqueue<IEmailService>(service => service.SendEmailAsync(email)):
+
+1.Hangfire serializes this call and stores it in the database as a Job record with state Enqueued.
+
+2.The BackgroundJobServer polls the database, sees a job ready, changes its state to Processing.
+
+3. The server deserializes the method call and executes SendEmailAsync(email).
+
+On success, Hangfire marks the job as Succeeded; if an exception occurs, it marks Failed and 
+retries depending on config.
+
+You can see all this in the Hangfire dashboard.
+
+Why Use Hangfire?
+Reliability: Persistent job storage and retries.
+Ease of use: Simple API to enqueue/schedule jobs.
+Monitoring: Built-in dashboard with detailed info.
+Extensibility: Supports multiple storage backends, filters, custom state handlers.
+Scalability: Multiple servers can process jobs concurrently
+
+
+❌ When Hangfire is not ideal:
+
+
+| Scenario                                            | Better alternative                                                                                             |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Lightweight short tasks** (e.g., in-memory queue) | Use ASP.NET [`BackgroundService`](https://learn.microsoft.com/en-us/dotnet/core/extensions/background-service) |
+| **High-scale cloud-native apps**                    | Use Azure Functions, AWS Lambda, or Cloud Tasks                                                                |
+| **Distributed job processing**                      | Consider [MassTransit](https://masstransit-project.com/), [NServiceBus](https://particular.net/nservicebus)    |
+| **Real-time processing** (events, streaming)        | Use Kafka, RabbitMQ, or SignalR (for frontend push)                                                            |
+
+
+
+--------------------------------------------------------------------------------
+
+
+Steps to use HangFire:
+
+
+1- Install this Packages in Main app :
+
+🔧 Step 1: Install Hangfire Packages
+Run this in the terminal:
+dotnet add package Hangfire
+dotnet add package Hangfire.AspNetCore
+dotnet add package Hangfire.SqlServer
+
+
+📦 Step 2: Configure Hangfire in Program.cs:
+
+builder.Services.AddHangfire(config =>
+    config.SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+          .UseSimpleAssemblyNameTypeSerializer()
+          .UseRecommendedSerializerSettings()
+          .UseSqlServerStorage(
+              builder.Configuration.GetConnectionString("DefaultConnection"),
+              new SqlServerStorageOptions
+              {
+                  CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+                  SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+                  QueuePollInterval = TimeSpan.Zero,
+                  UseRecommendedIsolationLevel = true,
+                  DisableGlobalLocks = true
+              }));
+
+builder.Services.AddHangfireServer(); // Starts Hangfire background job server
+
+--> Inject any services it will use like
+-->builder.Services.AddScoped<IEmailService, EmailService>();
+
+
+Note :----> Install using Hangfire; : Hangfire.core in the services app
+
+
+3- In the service :
+
+private readonly IBackgroundJobClient backgroundJobClient;
+backgroundJobClient.Enqueue<IEmailService>(emailService =>
+    emailService.SendEmailAsync(email));
+
+
+
+📌 What Is IBackgroundJobClient?
+IBackgroundJobClient is the Hangfire interface used to enqueue (schedule) background jobs to be executed 
+asynchronously.
+
+Think of it like: "Tell Hangfire: please run this method in the background after the current request is done."
+It does not execute immediately; it just queues the job in the Hangfire DB.
+A background worker (started by AddHangfireServer()) will later pick it up and run it.
+
+
+2. Enqueue a Job
+
+backgroundJobClient.Enqueue<IEmailService>(emailService =>
+    emailService.SendEmailAsync(email));
+This line:
+
+Tells Hangfire:
+
+“Hey, please run the SendEmailAsync(email) method on an instance of IEmailService, in the background.”
+
+Enqueue<T>() means Hangfire will resolve the service (from DI), serialize the method and arguments, and 
+store the job in the database.
+
+-->backgroundJobClient.Enqueue schedules a one-time fire-and-forget job that runs ASAP
+
+Then, a Hangfire worker (from AddHangfireServer()) will:
+
+1. Fetch the job from the DB,
+2. Resolve IEmailService using DI,
+
+Call SendEmailAsync(email) in a background thread.
+
+✅ Why This is Great
+You don’t block the HTTP request to send the email.
+If email sending fails, Hangfire can retry it automatically.
+It's reliable: jobs are stored in DB and won't be lost on app crash/restart.
+
+You can track the job status from the Hangfire Dashbo
+
+==========================================================
+
+ What is ILogger<T>?
+
+private readonly ILogger<RevokedTokenCleanupWorker> _logger;
+It's a built-in logging abstraction in ASP.NET Core.
+Automatically injected using dependency injection.
+
+You specify the type (T) so logs can be tagged with the correct class name.
+
+Supports different log levels:
+
+LogInformation()
+LogWarning()
+LogError()
+LogDebug()
+
+=========================
+
+
+✅ Why use .Replace("\\", "/")?
+On Windows, Path.Combine(...) uses backslashes (\) as path separators:
+
+Path.Combine("uploads", "images", "file.jpg")
+// Result on Windows: "uploads\images\file.jpg"
+But URLs and Unix-like systems (Linux, macOS, web browsers) require forward slashes (/):
+
+
+=====================================================
+
