@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AspNetCoreRateLimit" Version="5.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="8.0.15" />
+  </ItemGroup>
+
+	
+
+  <ItemGroup>
+    <ProjectReference Include="..\TaskManagementSystem.Services.Abstractions\TaskManagementSystem.Services.Abstractions.csproj" />
+    <ProjectReference Include="..\TaskManagementSystem.Services\TaskManagementSystem.Services.csproj" />
+  </ItemGroup>
+
+</Project>
